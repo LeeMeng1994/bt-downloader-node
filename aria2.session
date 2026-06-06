@@ -1,0 +1,34 @@
+magnet:?xt=urn:btih:ce79cc385da9aa57da3df180902a752f1c4d3d32&dn=%E6%8C%BDw%E8%AE%A1h.2160p.6v%E7%94%B5%E5%BD%B1%20%E5%9C%B0%E5%9D%80%E5%8F%91%E5%B8%83%E9%A1%B5%20www.6v123.net%20%E6%94%B6%E8%97%8F%E4%B8%8D%E8%BF%B7%E8%B7%AF
+ gid=04bd131b5f67feca
+ dir=D:\360安全浏览器下载
+ split=16
+ file-allocation=prealloc
+ max-connection-per-server=16
+ min-split-size=10485760
+ seed-time=0
+ enable-peer-exchange=true
+ bt-min-crypto-level=arc4
+ bt-require-crypto=false
+ bt-request-peer-speed-limit=51200
+ bt-max-peers=128
+ bt-stop-timeout=600
+ bt-prioritize-piece=head=32M
+ bt-tracker=udp://tracker.opentrackr.org:1337/announce,udp://open.demonii.com:1337/announce,udp://open.stealth.si:80/announce,udp://wepzone.net:6969/announce,udp://udp.tracker.projectk.org:23333/announce,udp://tracker.torrust-demo.com:6969/announce,udp://tracker.torrent.eu.org:451/announce,udp://tracker.srv00.com:6969/announce,udp://tracker.qu.ax:6969/announce,udp://tracker.plx.im:6969/announce,udp://tracker.iperson.xyz:6969/announce,udp://tracker.gmi.gd:6969/announce,udp://tracker.corpscorp.online:80/announce,udp://tracker.004430.xyz:1337/announce,udp://tracker-udp.gbitt.info:80/announce,udp://tr4ck3r.duckdns.org:6969/announce,udp://torrents.tmtime.dev:6969/announce,udp://t.overflow.biz:6969/announce,udp://martin-gebhardt.eu:25/announce,udp://ipv4announce.sktorrent.eu:6969/announce
+magnet:?xt=urn:btih:777e08b63e1d7c69aa693c6241d74338ebb5290b&dn=%E8%B6%85%E7%BA%A7%E9%A9%AC%E5%8A%9B%E6%AC%A7%E9%93%B6%E6%B2%B3%E5%A4%A7%E7%94%B5%E5%BD%B1.2160p.6v%E7%94%B5%E5%BD%B1%20%E5%9C%B0%E5%9D%80%E5%8F%91%E5%B8%83%E9%A1%B5%20www.6v123.net%20%E6%94%B6%E8%97%8F%E4%B8%8D%E8%BF%B7%E8%B7%AF
+ gid=de0a244ea7cf106f
+ dir=C:\Users\Administrator\.qclaw\workspace-agent-89694bd2\bt-downloader-node\downloads
+ split=16
+ file-allocation=prealloc
+ max-connection-per-server=16
+ min-split-size=10485760
+ seed-time=0
+ enable-peer-exchange=true
+ bt-min-crypto-level=arc4
+ bt-require-crypto=false
+ bt-request-peer-speed-limit=51200
+ bt-max-peers=128
+ bt-stop-timeout=300
+ bt-prioritize-piece=head=32M
+ bt-tracker-timeout=10
+ bt-tracker-connect-timeout=10
+ bt-tracker=udp://tracker.openbittorrent.com:80,udp://tracker.opentrackr.org:1337,udp://tracker.coppersurfer.tk:6969,udp://tracker.leechers-paradise.org:6969,udp://tracker.internetwarriors.net:1337,udp://open.stealth.si:80,udp://tracker.tiny-vps.com:6969,udp://tracker.torrent.eu.org:451,udp://retracker.netbynet.ru:2710,udp://retracker.lanta-net.ru:2710,http://tracker.openbittorrent.com:80,http://tracker.opentrackr.org:1337

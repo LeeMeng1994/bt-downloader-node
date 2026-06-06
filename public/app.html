@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>HTTP 下载器 v2</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; font-size: 28px; color: #4fc3f7; }
+        .input-section {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid #2a2a2a;
+        }
+        .input-group { display: flex; gap: 10px; margin-bottom: 16px; }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus { border-color: #4fc3f7; }
+        input[type="text"]::placeholder { color: #666; }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-primary { background: #4fc3f7; color: #0f0f0f; }
+        .btn-primary:hover { background: #29b6f6; }
+        .btn-primary:disabled { background: #1a3a4a; color: #666; cursor: not-allowed; }
+        .btn-danger { background: #ef5350; color: #fff; }
+        .btn-danger:hover { background: #e53935; }
+        .btn-secondary { background: #424242; color: #e0e0e0; }
+        .btn-secondary:hover { background: #616161; }
+        .btn-success { background: #66bb6a; color: #0f0f0f; }
+        .btn-success:hover { background: #43a047; }
+        .download-list { display: flex; flex-direction: column; gap: 12px; }
+        .download-item {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #2a2a2a;
+        }
+        .download-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .download-name { font-size: 15px; font-weight: 500; color: #fff; word-break: break-all; flex: 1; margin-right: 10px; }
+        .download-url { font-size: 11px; color: #666; word-break: break-all; margin-bottom: 10px; }
+        .download-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .download-status.pending { background: #424242; color: #ccc; }
+        .download-status.downloading { background: #1a3a4a; color: #4fc3f7; }
+        .download-status.done { background: #1a4a2a; color: #66bb6a; }
+        .download-status.error { background: #4a1a1a; color: #ef5350; }
+        .progress-bar {
+            height: 6px;
+            background: #0f0f0f;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4fc3f7;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        .progress-fill.complete { background: #66bb6a; }
+        .download-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            font-size: 12px;
+        }
+        .stat-item { display: flex; flex-direction: column; gap: 2px; }
+        .stat-label { color: #666; }
+        .stat-value { color: #ccc; font-weight: 500; }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        .empty-state svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.3; }
+        .speed-down { color: #4fc3f7; }
+        .log-section {
+            margin-top: 20px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #2a2a2a;
+        }
+        .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .log-title { font-size: 14px; font-weight: 500; color: #999; }
+        .log-content {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #888;
+        }
+        .log-line { padding: 2px 0; }
+        .log-time { color: #555; margin-right: 8px; }
+        .log-info { color: #4fc3f7; }
+        .log-success { color: #66bb6a; }
+        .log-error { color: #ef5350; }
+        .log-warn { color: #ffa726; }
+        .status-connected { color: #66bb6a; }
+        .status-disconnected { color: #ef5350; }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px 16px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            font-size: 13px;
+        }
+        @media (max-width: 600px) {
+            .input-group { flex-direction: column; }
+            .download-header { flex-direction: column; }
+            .download-stats { grid-template-columns: repeat(2, 1fr); }
+            .status-bar { flex-direction: column; gap: 8px; }
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal {
+            background: #1a1a1a;
+            border-radius: 12px;
+            border: 1px solid #333;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #fff;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        .modal-close:hover {
+            background: #333;
+            color: #fff;
+        }
+        .modal-body {
+            padding: 16px 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        .dir-tree {
+            background: #0f0f0f;
+            border-radius: 8px;
+            border: 1px solid #333;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .dir-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #1a1a1a;
+            transition: background 0.15s;
+        }
+        .dir-item:hover {
+            background: #1e1e1e;
+        }
+        .dir-item.selected {
+            background: #1a3a4a;
+        }
+        .dir-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        .dir-name {
+            flex: 1;
+            font-size: 13px;
+            color: #ccc;
+        }
+        .dir-item.selected .dir-name {
+            color: #4fc3f7;
+        }
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .breadcrumb-item {
+            padding: 4px 8px;
+            background: #0f0f0f;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #999;
+            cursor: pointer;
+            border: 1px solid #333;
+        }
+        .breadcrumb-item:hover {
+            background: #1e1e1e;
+            color: #ccc;
+        }
+        .breadcrumb-sep {
+            color: #666;
+            font-size: 12px;
+        }
+        .dir-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .dir-input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 HTTP 下载器</h1>
+        <div class="status-bar">
+            <span>WebSocket: <span id="wsStatus" class="status-disconnected">未连接</span></span>
+            <span>下载目录: <span id="currentDir" style="color: #999;">./downloads</span> <button class="btn btn-secondary" id="changeDirBtn" style="padding: 4px 12px; font-size: 12px; margin-left: 8px;">更改</button><button class="btn btn-secondary" id="openDirBtn" style="padding: 4px 12px; font-size: 12px; margin-left: 4px;">📂 打开</button></span>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="httpUrlInput" placeholder="输入 HTTP/HTTPS 下载链接..." />
+                <button class="btn btn-primary" id="addHttpBtn" onclick="addHttpDownload()">添加下载</button>
+            </div>
+            <div class="input-group" style="margin-bottom: 0;">
+                <input type="text" id="httpFilenameInput" placeholder="自定义文件名（可选）..." />
+            </div>
+        </div>
+
+        <div id="downloadList" class="download-list">
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <p>暂无下载任务</p>
+                <p style="font-size: 13px; margin-top: 8px;">输入直链地址开始下载</p>
+            </div>
+        </div>
+
+        <div class="log-section">
+            <div class="log-header">
+                <span class="log-title">📋 日志</span>
+                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;" onclick="clearLog()">清空</button>
+            </div>
+            <div class="log-content" id="logContent">
+                <div class="log-line"><span class="log-time">--:--:--</span>等待连接...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="dirModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">选择下载目录</span>
+                <button class="modal-close" onclick="closeDirModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="dir-input-group">
+                    <input type="text" id="dirPathInput" placeholder="输入路径或浏览选择..." />
+                    <button class="btn btn-primary" style="padding: 8px 16px;" onclick="loadDirFromInput()">前往</button>
+                </div>
+                <div class="breadcrumb" id="breadcrumb"></div>
+                <div class="dir-tree" id="dirTree">
+                    <div style="padding: 20px; text-align: center; color: #666;">加载中...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDirModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmDirSelection()">选择此目录</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let ws = null;
+        let reconnectTimer = null;
+        let downloads = [];
+        let logLines = [];
+
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+            log('正在连接 WebSocket: ' + wsUrl, 'info');
+            try {
+                ws = new WebSocket(wsUrl);
+            } catch (e) {
+                log('WebSocket 创建失败: ' + e.message, 'error');
+                return;
+            }
+            ws.onopen = () => {
+                document.getElementById('wsStatus').textContent = '已连接';
+                document.getElementById('wsStatus').className = 'status-connected';
+                log('WebSocket 已连接', 'success');
+            };
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleMessage(data);
+                } catch (e) {
+                    log('消息解析错误', 'error');
+                }
+            };
+            ws.onclose = () => {
+                document.getElementById('wsStatus').textContent = '未连接';
+                document.getElementById('wsStatus').className = 'status-disconnected';
+                log('WebSocket 断开，尝试重连...', 'warn');
+                reconnectTimer = setTimeout(connect, 3000);
+            };
+            ws.onerror = (err) => {
+                log('WebSocket 错误: ' + (err.message || '未知错误'), 'error');
+                console.error('WebSocket error:', err);
+            };
+        }
+
+        function handleMessage(data) {
+            switch (data.type) {
+                case 'httpList':
+                    downloads = data.downloads || [];
+                    renderDownloads();
+                    break;
+                case 'httpComplete':
+                    log(`下载完成: ${data.download?.filename || '未知'}`, 'success');
+                    break;
+                case 'error':
+                    log(`错误: ${data.message}`, 'error');
+                    break;
+            }
+        }
+
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString('zh-CN');
+            const line = { time, message, type };
+            logLines.push(line);
+            if (logLines.length > 100) logLines.shift();
+            renderLog();
+        }
+
+        function renderLog() {
+            const container = document.getElementById('logContent');
+            container.innerHTML = logLines.map(l =>
+                `<div class="log-line"><span class="log-time">${l.time}</span><span class="log-${l.type}">${escapeHtml(l.message)}</span></div>`
+            ).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearLog() { logLines = []; renderLog(); }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatSpeed(bytesPerSecond) {
+            return formatBytes(bytesPerSecond) + '/s';
+        }
+
+        async function addHttpDownload() {
+            const urlInput = document.getElementById('httpUrlInput');
+            const filenameInput = document.getElementById('httpFilenameInput');
+            const btn = document.getElementById('addHttpBtn');
+            const url = urlInput.value.trim();
+            const filename = filenameInput.value.trim();
+            if (!url) { log('请输入下载链接', 'warn'); return; }
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/api/add-http`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, filename: filename || undefined })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    log(`下载已添加: ${url.substring(0, 50)}...`, 'info');
+                    urlInput.value = '';
+                    filenameInput.value = '';
+                } else {
+                    log(`添加失败: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                log(`请求失败: ${err.message}`, 'error');
+            }
+            btn.disabled = false;
+        }
+
+        async function removeDownload(id) {
+            try {
+                const res = await fetch(`${API_BASE}/api/http-downloads/${id}`, { method: 'DELETE' });
+                if (res.ok) log('任务已移除', 'info');
+            } catch (err) {
+                log(`移除失败: ${err.message}`, 'error');
+            }
+        }
+
+        function renderDownloads() {
+            const container = document.getElementById('downloadList');
+            if (downloads.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        <p>暂无下载任务</p>
+                        <p style="font-size: 13px; margin-top: 8px;">输入直链地址开始下载</p>
+                    </div>`;
+                return;
+            }
+            container.innerHTML = downloads.map(d => {
+                const progress = (d.progress || 0) * 100;
+                const statusClass = d.status || 'pending';
+                const statusText = { pending: '等待中', downloading: '下载中', done: '已完成', error: '错误' }[statusClass] || statusClass;
+                return `
+                    <div class="download-item">
+                        <div class="download-header">
+                            <span class="download-name">${escapeHtml(d.filename || 'Unknown')}</span>
+                            <span class="download-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="download-url">${escapeHtml(d.url)}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${d.status === 'done' ? 'complete' : ''}" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="download-stats">
+                            <div class="stat-item"><span class="stat-label">进度</span><span class="stat-value">${progress.toFixed(1)}%</span></div>
+                            <div class="stat-item"><span class="stat-label">大小</span><span class="stat-value">${formatBytes(d.size || 0)}</span></div>
+                            <div class="stat-item"><span class="stat-label">已下载</span><span class="stat-value">${formatBytes(d.downloaded || 0)}</span></div>
+                            <div class="stat-item speed-down"><span class="stat-label">速度</span><span class="stat-value">${formatSpeed(d.speed || 0)}</span></div>
+                        </div>
+                        <div style="margin-top: 10px; display: flex; gap: 8px;">
+                            ${d.status === 'done' && d.filePath ? `
+                                <a class="btn btn-success" href="${API_BASE}/api/http-downloads/${d.id}/download" download="${escapeHtml(d.filename)}">下载文件</a>
+                            ` : ''}
+                            <button class="btn btn-danger" onclick="removeDownload(${d.id})">移除</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function fetchCurrentDir() {
+            try {
+                const res = await fetch(`${API_BASE}/api/download-dir`);
+                const data = await res.json();
+                if (res.ok && data.dir) {
+                    document.getElementById('currentDir').textContent = data.dir;
+                }
+            } catch (err) {}
+        }
+
+        let currentBrowseDir = '';
+        let selectedDir = '';
+
+        async function openDirModal() {
+            selectedDir = '';
+            const modal = document.getElementById('dirModal');
+            modal.style.opacity = '1';
+            modal.style.visibility = 'visible';
+            modal.classList.add('show');
+            document.getElementById('dirTree').innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">加载中...</div>';
+            try {
+                await loadDirList('');
+            } catch (e) {
+                console.error('loadDirList error:', e);
+            }
+        }
+
+        function closeDirModal() {
+            const modal = document.getElementById('dirModal');
+            modal.classList.remove('show');
+            modal.style.opacity = '0';
+            modal.style.visibility = 'hidden';
+        }
+
+        async function loadDirFromInput() {
+            const input = document.getElementById('dirPathInput');
+            const dir = input.value.trim();
+            if (dir) {
+                await loadDirList(dir);
+            }
+        }
+
+        async function loadDirList(dir) {
+            currentBrowseDir = dir;
+            const tree = document.getElementById('dirTree');
+            tree.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">加载中...</div>';
+            try {
+                const res = await fetch(`${API_BASE}/api/dir-list?dir=${encodeURIComponent(dir)}`);
+                const data = await res.json();
+                if (!res.ok) {
+                    tree.innerHTML = `<div style="padding: 20px; color: #ef5350;">错误: ${data.error}</div>`;
+                    return;
+                }
+
+                let html = '';
+                if (data.parent !== null && data.parent !== undefined) {
+                    html += `<div class="dir-item" onclick="loadDirListJs('${jsEscape(data.parent)}')">
+                        <span class="dir-icon">⬆️</span>
+                        <span class="dir-name">..</span>
+                    </div>`;
+                }
+                // 始终显示"选择当前目录"选项
+                const currentDirToShow = data.isRoot ? '' : data.current;
+                html += `<div class="dir-item ${selectedDir === currentDirToShow ? 'selected' : ''}" onclick="selectDir('${jsEscape(currentDirToShow)}', this)">
+                    <span class="dir-icon">📂</span>
+                    <span class="dir-name">. (选择当前目录)</span>
+                </div>`;
+                data.dirs.forEach(d => {
+                    const fullPath = data.isRoot ? d : pathJoin(data.current, d);
+                    html += `<div class="dir-item" onclick="enterDir('${jsEscape(fullPath)}')">
+                        <span class="dir-icon">📁</span>
+                        <span class="dir-name">${escapeHtml(data.isRoot ? d.replace('\\', '') : d)}</span>
+                    </div>`;
+                });
+                tree.innerHTML = html || '<div style="padding: 20px; text-align: center; color: #666;">空目录</div>';
+
+                let breadcrumbHtml = '';
+                if (data.isRoot) {
+                    breadcrumbHtml = '<span class="breadcrumb-item" onclick="loadDirList(\'\')">此电脑</span>';
+                } else {
+                    breadcrumbHtml = '<span class="breadcrumb-item" onclick="loadDirList(\'\')">此电脑</span><span class="breadcrumb-sep">›</span>';
+                    const parts = data.current.split(/[\\/]+/).filter(Boolean);
+                    let acc = '';
+                    parts.forEach((part, i) => {
+                        acc = acc ? `${acc}\\${part}` : part;
+                        if (i < parts.length - 1) {
+                            breadcrumbHtml += `<span class="breadcrumb-item" onclick="loadDirListJs('${jsEscape(acc)}')">${escapeHtml(part)}</span><span class="breadcrumb-sep">›</span>`;
+                        } else {
+                            breadcrumbHtml += `<span class="breadcrumb-item" style="background: #333; color: #fff;">${escapeHtml(part)}</span>`;
+                        }
+                    });
+                }
+                document.getElementById('breadcrumb').innerHTML = breadcrumbHtml;
+                document.getElementById('dirPathInput').value = data.current || '';
+            } catch (err) {
+                tree.innerHTML = `<div style="padding: 20px; color: #ef5350;">加载失败: ${err.message}</div>`;
+            }
+        }
+
+        function jsEscape(str) {
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        function pathJoin(a, b) {
+            if (!a) return b;
+            if (/^[A-Za-z]:$/.test(a)) {
+                return a + '\\' + b;
+            }
+            if (a.endsWith('\\') || a.endsWith('/')) return a + b;
+            return a + '\\' + b;
+        }
+
+        function loadDirListJs(dir) {
+            loadDirList(dir);
+        }
+
+        function enterDir(dir) {
+            loadDirList(dir);
+        }
+
+        function selectDir(dir, el) {
+            selectedDir = dir;
+            document.querySelectorAll('.dir-item').forEach(item => item.classList.remove('selected'));
+            if (el) el.classList.add('selected');
+        }
+
+        async function confirmDirSelection() {
+            if (!selectedDir) {
+                log('请先选择一个目录', 'warn');
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE}/api/download-dir`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dir: selectedDir })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('currentDir').textContent = data.dir;
+                    log(data.message, 'success');
+                    closeDirModal();
+                } else {
+                    log(`设置失败: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                log(`请求失败: ${err.message}`, 'error');
+            }
+        }
+
+        console.log('=== 脚本开始执行 ===');
+        log('页面加载完成，初始化...', 'info');
+
+        console.log('=== 脚本开始执行 ===');
+        console.log('document.readyState:', document.readyState);
+        console.log('body children count:', document.body.children.length);
+
+        try {
+            connect();
+        } catch (e) {
+            log('connect() 错误: ' + e.message, 'error');
+            console.error('connect() error:', e);
+        }
+        try {
+            fetchCurrentDir();
+        } catch (e) {
+            log('fetchCurrentDir() 错误: ' + e.message, 'error');
+        }
+        log('HTTP 下载器已就绪');
+        log('支持 HTTP/HTTPS 直链下载');
+
+        const httpUrlInput = document.getElementById('httpUrlInput');
+        const dirPathInput = document.getElementById('dirPathInput');
+        const changeDirBtn = document.getElementById('changeDirBtn');
+
+        console.log('httpUrlInput:', httpUrlInput);
+        console.log('dirPathInput:', dirPathInput);
+        console.log('changeDirBtn:', changeDirBtn);
+
+        if (httpUrlInput) {
+            httpUrlInput.addEventListener('keypress', e => {
+                if (e.key === 'Enter') addHttpDownload();
+            });
+        }
+        if (dirPathInput) {
+            dirPathInput.addEventListener('keypress', e => {
+                if (e.key === 'Enter') loadDirFromInput();
+            });
+        }
+        if (changeDirBtn) {
+            changeDirBtn.addEventListener('click', function() {
+                console.log('changeDirBtn clicked');
+                openDirModal();
+            });
+            log('更改按钮已绑定', 'success');
+        } else {
+            log('错误：找不到更改按钮', 'error');
+        }
+
+        // 打开下载目录按钮
+        const openDirBtn = document.getElementById('openDirBtn');
+        if (openDirBtn) {
+            openDirBtn.addEventListener('click', async function() {
+                console.log('openDirBtn clicked');
+                try {
+                    const res = await fetch(`${API_BASE}/api/open-download-dir`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        log('已打开下载目录: ' + data.dir, 'success');
+                    } else {
+                        log('打开目录失败: ' + (data.error || '未知错误'), 'error');
+                    }
+                } catch (e) {
+                    log('打开目录请求失败: ' + e.message, 'error');
+                }
+            });
+            log('打开目录按钮已绑定', 'success');
+        }
+    </script>
+</body>
+</html>
